@@ -1,4 +1,4 @@
-# RPG Maker MZ 플러그인 목록
+E# RPG Maker MZ 플러그인 목록
 
 ## 기본 플러그인
 
@@ -18,7 +18,7 @@ RPG Maker MZ 기본 제공 플러그인. 화면에 텍스트 그림 표시.
 
 ## 커스텀 플러그인
 
-### SimpleTimer
+### SimpleTimer(개발 중단)
 시간 제한 시스템. 타이머가 0이 되면 게임 오버.
 
 **사용법:**
@@ -34,7 +34,7 @@ RPG Maker MZ 기본 제공 플러그인. 화면에 텍스트 그림 표시.
 
 ---
 
-### TimeSystem
+### TimeSystem(보완 필요, 필수적으로 쓰일만한 플러그인)
 게임 내 시간 시스템. 시계 표시, 시간 경과, 낮/밤 전환.
 
 **주요 기능:**
@@ -68,7 +68,7 @@ $gameTime.hideClock();       // 시계 숨기기
 
 ---
 
-### DailyLife
+### DailyLife(timesystme을 보완해줄수 있는 플러그인 없어도 상관 x)
 일상 생활 시스템. 수면, 샤워, 식사.
 
 **주요 기능:**
@@ -99,7 +99,7 @@ $dailyLife.meal(45, "점심");  // 점심식사
 
 ---
 
-### Gemini_API_Plugin
+### Gemini_API_Plugin(llm 대화 플러그인 수정 필요)
 Gemini API 연동. NPC 자동 대화 생성.
 
 **주요 기능:**
@@ -203,3 +203,8 @@ const API_CONFIG = {
 - **API 키 필요**: Gemini_API_Plugin, SpeechToText
 - **의존성**: DailyLife는 TimeSystem과 함께 사용 권장
 - **브라우저 환경**: 음성 인식은 마이크 권한 필요
+
+
+## 타일 셋 추가
+
+ - /img/tilesets 경로로 들어가 추가하면 됨
