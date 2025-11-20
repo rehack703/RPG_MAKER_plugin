@@ -4,3 +4,6 @@ node_modules/
 Thumbs.db
 js/config.js
 .claude
+
+# API Key Configuration
+config.js

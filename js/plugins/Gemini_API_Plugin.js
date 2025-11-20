@@ -1,6 +1,6 @@
 /*:
  * @target MZ
- * @plugindesc [Gemini API] Gemini API를 호출하여 텍스트를 생성하고 NPC 자동 대화를 지원합니다.
+ * @plugindesc [Gemini API] Gemini API를 호출하여 텍스트를 생성하고 NPC 자동 대화 및 1:1 채팅을 지원합니다.
  * @author Your Name
  *
  * @command callGemini
@@ -30,7 +30,7 @@
  *
  * @arg npcId
  * @text NPC ID
- * @desc NPC의 고유 ID (1, 2, 3...)
+ * @desc NPC의 고유 ID (이벤트 ID와 동일하게 설정 권장)
  * @type number
  * @min 1
  * @default 1
@@ -53,73 +53,20 @@
  * @type string
  * @default 일반인
  *
- * @command npcChat
- * @text NPC 대화
- * @desc 두 NPC 간의 대화를 생성합니다
+ * @command startChatWithNpc
+ * @text NPC와 1:1 대화 시작
+ * @desc 지정된 NPC와 1:1 대화를 시작하고 채팅 UI를 엽니다.
  *
- * @arg npc1Id
- * @text NPC 1 ID
- * @desc 첫 번째 NPC ID
+ * @arg npcId
+ * @text NPC ID
+ * @desc 대화할 NPC의 ID (등록된 ID)
  * @type number
  * @min 1
  * @default 1
  *
- * @arg npc2Id
- * @text NPC 2 ID
- * @desc 두 번째 NPC ID
- * @type number
- * @min 1
- * @default 2
- *
- * @arg turnOwner
- * @text 차례
- * @desc 누구의 차례인지 (1 = NPC1, 2 = NPC2)
- * @type select
- * @option NPC 1
- * @value 1
- * @option NPC 2
- * @value 2
- * @default 1
- *
- * @arg resultVar
- * @text 결과 변수
- * @desc 대화 결과를 저장할 변수
- * @type variable
- * @default 10
- *
- * @arg distanceCheck
- * @text 거리 체크
- * @desc 플레이어와의 거리를 체크할지 여부
- * @type boolean
- * @default true
- *
- * @arg maxDistance
- * @text 최대 거리
- * @desc 플레이어와의 최대 거리 (타일)
- * @type number
- * @min 1
- * @default 7
- *
- * @arg autoDisplay
- * @text 자동 말풍선 표시
- * @desc 대화 결과를 자동으로 말풍선으로 표시
- * @type boolean
- * @default true
- *
- * @arg pictureId
- * @text 픽처 번호
- * @desc 말풍선에 사용할 픽처 번호 (NPC마다 다른 번호 사용)
- * @type number
- * @min 1
- * @max 100
- * @default 1
- *
- * @arg displayDuration
- * @text 표시 시간
- * @desc 말풍선 표시 시간 (프레임, 60=1초)
- * @type number
- * @min 1
- * @default 180
+ * @command endChatWithNpc
+ * @text NPC와 1:1 대화 종료
+ * @desc 현재 진행중인 1:1 대화를 종료합니다.
  *
  * @command speechToText
  * @text 음성 -> 텍스트 변환
@@ -133,58 +80,257 @@
  *
  * @help
  * ============================================================================
- * Gemini API Plugin - NPC 자동 대화 시스템
+ * Gemini API Plugin - NPC 자동 대화 및 1:1 채팅
  * ============================================================================
  *
- * == 기본 사용법 ==
- *   플러그인 커맨드: Gemini 호출
- *     - 프롬프트: "재밌는 농담 해줘"
- *     - 변수: 1
- *     - 스위치: 0
- *
- * == 음성 -> 텍스트 변환 ==
- *   플러그인 커맨드: 음성 -> 텍스트 변환
- *     - 변수: 1
- *   이후, 마이크에 대고 말하면 변환된 텍스트가 지정된 변수에 저장됩니다.
- *
- * == NPC 자동 대화 시스템 ==
+ * == 1:1 채팅 사용법 ==
  * 1. NPC 등록:
- *    플러그인 커맨드: NPC 등록
- *      - NPC ID: 1
- *      - 이름: 상인
- *      - 성격: 친절하고 말이 많음
- *      - 배경: 마을에서 30년간 가게 운영
+ *    이벤트 편집기에서 'NPC 등록' 플러그인 커맨드를 사용해 NPC 정보를 설정합니다.
+ *    - NPC ID: 1, 이름: 촌장, 성격: 현명하고 말이 느림 등
  *
- * 2. NPC 대화 생성:
- *    플러그인 커맨드: NPC 대화
- *      - NPC 1 ID: 1
- *      - NPC 2 ID: 2
- *      - 차례: NPC 1
- *      - 결과 변수: 10
- *      - 거리 체크: true
- *      - 최대 거리: 7
+ * 2. 대화 시작:
+ *    NPC와 대화하는 이벤트(예: 플레이어 접촉 시)에 'NPC와 1:1 대화 시작' 커맨드를 넣습니다.
+ *    - NPC ID: 1 (등록한 NPC의 ID)
  *
- * 3. 대화 표시 (GabeMZ_MessagePlus 사용):
- *    메시지: <balloon: 1>
- *            <name: 상인>
- *            \V[10]
+ * 3. 대화 진행:
+ *    게임 화면에 채팅창이 나타나면 텍스트를 입력하여 대화할 수 있습니다.
+ *    'Escape' 키를 누르면 대화가 종료됩니다.
  *
- * 자세한 설정 방법은 SETUP_GUIDE.md를 참고하세요.
+ * 4. 대화 종료 (선택):
+ *    'NPC와 1:1 대화 종료' 커맨드를 사용하여 이벤트를 통해 대화를 강제로 끝낼 수도 있습니다.
+ *
+ * == 기존 기능 ==
+ * - Gemini 호출: 범용 Gemini API 호출
+ * - NPC 등록: 자동 대화 또는 1:1 채팅에 사용할 NPC 정보 등록
+ * - 음성 -> 텍스트 변환: 마이크 입력을 텍스트로 변환
+ *
+ * 자세한 설정 방법은 문서를 참고하세요.
  */
 
 (function () {
-  // ⚠️ 보안 경고: 실제 키를 여기에 넣지 마세요. 테스트 목적으로만 사용하세요.
-  const GEMINI_API_KEY = "";
-
   // NPC 데이터 저장소
   const npcData = {};
 
-  // 대화 히스토리 저장소 (최근 5개 유지)
-  const conversationHistory = {};
-  const MAX_HISTORY = 5;
+  // 1:1 채팅 대화 히스토리 (플레이어-NPC)
+  const playerChatHistory = {};
+  const MAX_PLAYER_CHAT_HISTORY = 10; // 플레이어와의 대화는 더 길게 기억
 
   //===========================================================================
-  // 음성 인식 (Speech-to-Text)
+  // 1:1 채팅 UI 및 로직
+  //===========================================================================
+  let chatState = {
+    isActive: false,
+    currentNpcId: null,
+    uiElements: null,
+    escapeListener: null
+  };
+
+  function createChatUI() {
+    if (chatState.uiElements) return chatState.uiElements;
+
+    const style = document.createElement('style');
+    style.id = 'gemini-chat-style';
+    style.innerHTML = `
+      #gemini-chat-container {
+        position: absolute;
+        bottom: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        max-width: 800px;
+        height: 300px;
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 2px solid #fff;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+      }
+      #gemini-chat-log {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 10px;
+        font-family: 'GameFont', sans-serif;
+        font-size: 18px;
+        color: #fff;
+        line-height: 1.5;
+      }
+      .chat-message { margin-bottom: 8px; }
+      .chat-player { color: #87CEEB; } /* SkyBlue */
+      .chat-npc { color: #FFD700; } /* Gold */
+      #gemini-chat-input {
+        border: none;
+        border-top: 2px solid #fff;
+        background-color: #000;
+        color: #fff;
+        padding: 10px;
+        font-family: 'GameFont', sans-serif;
+        font-size: 20px;
+        outline: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const container = document.createElement('div');
+    container.id = 'gemini-chat-container';
+
+    const log = document.createElement('div');
+    log.id = 'gemini-chat-log';
+
+    const input = document.createElement('input');
+    input.id = 'gemini-chat-input';
+    input.type = 'text';
+    input.placeholder = '메시지를 입력하고 Enter를 누르세요...';
+    input.onkeydown = handleChatInput;
+
+    container.appendChild(log);
+    container.appendChild(input);
+    document.body.appendChild(container);
+
+    // 게임 컨트롤 비활성화
+    Input.clear();
+    $gameSystem.disableMenu();
+    $gameSystem.disableSave();
+
+
+    chatState.uiElements = { container, log, input, style };
+    return chatState.uiElements;
+  }
+
+  function destroyChatUI() {
+    if (!chatState.uiElements) return;
+
+    document.body.removeChild(chatState.uiElements.container);
+    document.head.removeChild(chatState.uiElements.style);
+    chatState.uiElements = null;
+    chatState.isActive = false;
+
+    // 게임 컨트롤 활성화
+    $gameSystem.enableMenu();
+    $gameSystem.enableSave();
+  }
+
+  function addMessageToLog(sender, text, senderType) {
+    if (!chatState.uiElements) return;
+    const { log } = chatState.uiElements;
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('chat-message', `chat-${senderType}`);
+    messageDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    log.appendChild(messageDiv);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function handleChatInput(event) {
+    if (event.key === 'Enter') {
+      const input = event.target;
+      const message = input.value.trim();
+      if (message && chatState.currentNpcId) {
+        addMessageToLog('나', message, 'player');
+        sendChatMessage(message, chatState.currentNpcId);
+        input.value = '';
+      }
+      event.stopPropagation(); // 게임 엔진으로 이벤트 전파 방지
+    }
+  }
+
+  function buildPlayerChatPrompt(npcId, playerMessage) {
+    const npc = npcData[npcId];
+    if (!npc) return "오류: NPC 정보를 찾을 수 없습니다.";
+
+    const history = getPlayerChatHistory(npcId);
+    const historyText = history.length > 0
+      ? history.map(h => `${h.speaker}: ${h.text}`).join('\n')
+      : "(대화 시작)";
+
+    return `당신은 TRPG 게임의 NPC인 '${npc.name}'입니다.
+당신의 정보는 다음과 같습니다:
+- 성격: ${npc.personality}
+- 배경: ${npc.background}
+
+당신은 지금 플레이어와 대화하고 있습니다.
+플레이어에게 자연스럽게 응답하세요.
+
+--- 이전 대화 ---
+${historyText}
+---
+
+플레이어의 마지막 말: "${playerMessage}"
+
+이제 '${npc.name}'으로서 당신의 차례입니다. 한두 문장의 짧은 대답만 생성하세요.
+(다른 설명이나 이름 없이 오직 대사만 출력하세요.)`;
+  }
+
+  function sendChatMessage(message, npcId) {
+    const npc = npcData[npcId];
+    if (!npc) return;
+
+    // 히스토리에 플레이어 메시지 추가
+    addPlayerChatHistory(npcId, '플레이어', message);
+    addMessageToLog(npc.name, '...', 'npc'); // 로딩 표시
+
+    const prompt = buildPlayerChatPrompt(npcId, message);
+
+    const MODEL_NAME = "gemini-2.5-flash";
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent?key=${GeminiConfig.API_KEY}`;
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    })
+    .then(response => response.ok ? response.json() : Promise.reject(response.text()))
+    .then(data => {
+      const npcResponse = data.candidates[0].content.parts[0].text.trim();
+      // 히스토리에 NPC 응답 추가
+      addPlayerChatHistory(npcId, npc.name, npcResponse);
+
+      // '...' 메시지 업데이트
+      const lastMsg = chatState.uiElements.log.lastChild;
+      if (lastMsg.innerText.includes('...')) {
+        lastMsg.innerHTML = `<strong>${npc.name}:</strong> ${npcResponse}`;
+      } else { // 혹시 모르니 안전장치
+        addMessageToLog(npc.name, npcResponse, 'npc');
+      }
+    })
+    .catch(error => {
+      console.error("[Gemini] 1:1 채팅 오류:", error);
+      const lastMsg = chatState.uiElements.log.lastChild;
+      if (lastMsg.innerText.includes('...')) {
+        lastMsg.innerHTML = `<strong>${npc.name}:</strong> (오류가 발생했습니다.)`;
+      }
+    });
+  }
+
+  function getPlayerChatHistory(npcId) {
+    return playerChatHistory[npcId] || [];
+  }
+
+  function addPlayerChatHistory(npcId, speaker, text) {
+    if (!playerChatHistory[npcId]) {
+      playerChatHistory[npcId] = [];
+    }
+    const history = playerChatHistory[npcId];
+    history.push({ speaker, text });
+    if (history.length > MAX_PLAYER_CHAT_HISTORY) {
+      history.shift();
+    }
+  }
+
+  function endChat() {
+      if (!chatState.isActive) return;
+      console.log('[Gemini] 1:1 채팅 종료');
+      destroyChatUI();
+      chatState.isActive = false;
+      chatState.currentNpcId = null;
+      if (chatState.escapeListener) {
+          document.removeEventListener('keydown', chatState.escapeListener);
+          chatState.escapeListener = null;
+      }
+  }
+
+
+  //===========================================================================
+  // 음성 인식 (기존 코드)
   //===========================================================================
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition;
@@ -195,177 +341,25 @@
       return;
     }
     recognition = new SpeechRecognition();
-    recognition.lang = 'ko-KR'; // 한국어 설정
-    recognition.interimResults = false; // 중간 결과는 받지 않음
-    recognition.maxAlternatives = 1; // 가장 가능성 높은 결과 하나만 받음
-
-    recognition.onstart = () => {
-      console.log("[Gemini] 음성 인식 시작...");
-      $gameMessage.add("음성 인식 시작...");
-    };
+    recognition.lang = 'ko-KR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
       const text = event.results[0][0].transcript;
-      console.log(`[Gemini] 인식된 텍스트: ${text}`);
       const variableId = recognition.variableId;
       if (variableId) {
         $gameVariables.setValue(variableId, text);
-        $gameMessage.add(`인식된 텍스트: ${text}`);
       }
     };
-
-    recognition.onspeechend = () => {
-      recognition.stop();
-      console.log("[Gemini] 음성 인식 종료.");
-      $gameMessage.add("음성 인식 종료.");
-    };
-
-    recognition.onerror = (event) => {
-      console.error(`[Gemini] 음성 인식 오류: ${event.error}`);
-      $gameMessage.add(`음성 인식 오류: ${event.error}`);
-    };
+    recognition.onerror = (event) => console.error(`[Gemini] 음성 인식 오류: ${event.error}`);
   }
-
-  // 플러그인 로드 시 음성 인식 초기화
   initializeSpeechRecognition();
 
-  //===========================================================================
-  // 유틸리티 함수
-  //===========================================================================
-
-  // 플레이어와 이벤트 간 거리 계산
-  function getDistanceToPlayer(eventId) {
-    const event = $gameMap.event(eventId);
-    if (!event) return 999;
-    const playerX = $gamePlayer.x;
-    const playerY = $gamePlayer.y;
-    const eventX = event.x;
-    const eventY = event.y;
-    return Math.abs(playerX - eventX) + Math.abs(playerY - eventY);
-  }
-
-  // 대화 히스토리 키 생성
-  function getHistoryKey(npc1Id, npc2Id) {
-    const ids = [npc1Id, npc2Id].sort((a, b) => a - b);
-    return `${ids[0]}-${ids[1]}`;
-  }
-
-  // 히스토리에 대화 추가
-  function addToHistory(npc1Id, npc2Id, speaker, text) {
-    const key = getHistoryKey(npc1Id, npc2Id);
-    if (!conversationHistory[key]) {
-      conversationHistory[key] = [];
-    }
-    conversationHistory[key].push({ speaker, text });
-
-    // 최근 5개만 유지
-    if (conversationHistory[key].length > MAX_HISTORY) {
-      conversationHistory[key].shift();
-    }
-  }
-
-  // 히스토리 가져오기
-  function getHistory(npc1Id, npc2Id) {
-    const key = getHistoryKey(npc1Id, npc2Id);
-    return conversationHistory[key] || [];
-  }
-
-  // NPC 대화 프롬프트 생성
-  function buildNPCPrompt(currentNpcId, otherNpcId) {
-    const current = npcData[currentNpcId];
-    const other = npcData[otherNpcId];
-
-    if (!current || !other) {
-      return "대화를 생성할 수 없습니다.";
-    }
-
-    const history = getHistory(currentNpcId, otherNpcId);
-    const historyText = history.length > 0
-      ? history.map(h => `${h.speaker}: ${h.text}`).join('\n')
-      : "(대화 시작)";
-
-    return `당신은 ${current.name}입니다.
-성격: ${current.personality}
-배경: ${current.background}
-
-대화 상대: ${other.name} (${other.personality})
-
-지금까지의 대화:
-${historyText}
-
-${current.name}으로서 ${other.name}에게 자연스럽게 한 문장으로 대답하세요.
-답변만 출력하세요 (이름이나 다른 설명 없이).`;
-  }
-
-  // NPC 위에 말풍선 표시
-  function showNPCBalloon(eventId, text, pictureId, duration) {
-    const event = $gameMap.event(eventId);
-    if (!event) {
-      console.error(`[Gemini] 이벤트 ${eventId}를 찾을 수 없습니다`);
-      return;
-    }
-
-    // TextPicture 플러그인 호출
-    if (typeof PluginManager._commands !== 'undefined') {
-      // TextPicture 설정
-      const textPictureCommand = PluginManager._commands.find(
-        cmd => cmd[0] === 'TextPicture' && cmd[1] === 'set'
-      );
-      if (textPictureCommand) {
-        PluginManager.callCommand(this, 'TextPicture', 'set', { text: text });
-      }
-    }
-
-    // 이벤트 화면 좌표 계산
-    const screenX = event.screenX();
-    const screenY = event.screenY() - 48 - 24; // 이벤트 위 + 여유
-
-    // 픽처 표시
-    $gameScreen.showPicture(
-      pictureId,
-      "",  // 이미지 없음 (TextPicture 사용)
-      1,   // 원점: 중앙
-      screenX,
-      screenY,
-      100, // 크기 X
-      100, // 크기 Y
-      255, // 불투명도
-      0    // 블렌드 모드
-    );
-
-    console.log(`[Gemini] 말풍선 표시: 이벤트${eventId}, 픽처${pictureId}, "${text.substring(0, 20)}..."`);
-
-    // 일정 시간 후 자동 삭제
-    setTimeout(() => {
-      $gameScreen.erasePicture(pictureId);
-      console.log(`[Gemini] 말풍선 삭제: 픽처${pictureId}`);
-    }, duration * 1000 / 60); // 프레임을 밀리초로 변환
-  }
 
   //===========================================================================
   // 플러그인 커맨드
   //===========================================================================
-
-  // 음성 -> 텍스트 변환
-  PluginManager.registerCommand("Gemini_API_Plugin", "speechToText", (args) => {
-    if (!recognition) {
-      $gameMessage.add("음성 인식이 지원되지 않는 환경입니다.");
-      return;
-    }
-    const variableId = Number(args.variableId);
-    recognition.variableId = variableId; // 결과를 저장할 변수 ID 저장
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error("[Gemini] 음성 인식 시작 오류:", e);
-      if (e.name === 'InvalidStateError') {
-        // 이미 인식 중일 때 발생하는 오류. 무시하거나 사용자에게 알림.
-        $gameMessage.add("이미 음성 인식이 진행 중입니다.");
-      }
-    }
-  });
-
-  // NPC 등록
   PluginManager.registerCommand("Gemini_API_Plugin", "registerNPC", (args) => {
     const npcId = Number(args.npcId);
     npcData[npcId] = {
@@ -376,154 +370,80 @@ ${current.name}으로서 ${other.name}에게 자연스럽게 한 문장으로 �
     console.log(`[Gemini] NPC 등록: ID=${npcId}, 이름=${args.name}`);
   });
 
-  // NPC 대화
-  PluginManager.registerCommand("Gemini_API_Plugin", "npcChat", (args) => {
-    const npc1Id = Number(args.npc1Id);
-    const npc2Id = Number(args.npc2Id);
-    const turnOwner = Number(args.turnOwner);
-    const resultVar = Number(args.resultVar);
-    const distanceCheck = args.distanceCheck === "true";
-    const maxDistance = Number(args.maxDistance);
-    const autoDisplay = args.autoDisplay === "true";
-    const pictureId = Number(args.pictureId);
-    const displayDuration = Number(args.displayDuration);
-
-    const currentNpcId = turnOwner === 1 ? npc1Id : npc2Id;
-    const otherNpcId = turnOwner === 1 ? npc2Id : npc1Id;
-
-    console.log(`[Gemini] NPC 대화 시작: ${currentNpcId} -> ${otherNpcId}`);
-
-    // 거리 체크
-    if (distanceCheck) {
-      const distance = getDistanceToPlayer(currentNpcId);
-      if (distance > maxDistance) {
-        console.log(`[Gemini] 거리 체크 실패: ${distance} > ${maxDistance}`);
-        $gameVariables.setValue(resultVar, "");
-        return;
-      }
-    }
-
-    // NPC 데이터 확인
-    if (!npcData[currentNpcId] || !npcData[otherNpcId]) {
-      console.error(`[Gemini] NPC 데이터 없음: ${currentNpcId} 또는 ${otherNpcId}`);
-      $gameVariables.setValue(resultVar, "오류: NPC 미등록");
+  PluginManager.registerCommand("Gemini_API_Plugin", "startChatWithNpc", (args) => {
+    const npcId = Number(args.npcId);
+    if (!npcData[npcId]) {
+      console.error(`[Gemini] 채팅 시작 오류: NPC ID ${npcId}가 등록되지 않았습니다.`);
       return;
     }
+    if (chatState.isActive) {
+        endChat(); // 기존 채팅이 있다면 종료
+    }
 
-    // 로딩 표시
-    $gameVariables.setValue(resultVar, "...");
+    console.log(`[Gemini] ${npcData[npcId].name}(와)과 1:1 채팅 시작`);
+    chatState.isActive = true;
+    chatState.currentNpcId = npcId;
+    const ui = createChatUI();
+    ui.input.focus();
 
-    // 프롬프트 생성
-    const prompt = buildNPCPrompt(currentNpcId, otherNpcId);
-    console.log(`[Gemini] 프롬프트:\n${prompt}`);
+    // 초기 인사말
+    const initialMessage = `안녕하세요! 저는 ${npcData[npcId].name}입니다. 무엇을 도와드릴까요?`;
+    addMessageToLog(npcData[npcId].name, initialMessage, 'npc');
+    addPlayerChatHistory(npcId, npcData[npcId].name, initialMessage);
 
-    // API 호출
-    const MODEL_NAME = "gemini-2.5-flash";
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    })
-    .then((response) => {
-      if (!response.ok) {
-        return response.text().then(text => {
-          throw new Error(`HTTP ${response.status}: ${text}`);
-        });
-      }
-      return response.json();
-    })
-    .then((data) => {
-      const text = data.candidates[0].content.parts[0].text.trim();
-
-      // 히스토리에 추가
-      addToHistory(npc1Id, npc2Id, npcData[currentNpcId].name, text);
-
-      // 변수에 저장
-      $gameVariables.setValue(resultVar, text);
-
-      // 자동 말풍선 표시
-      if (autoDisplay) {
-        showNPCBalloon(currentNpcId, text, pictureId, displayDuration);
-      }
-
-      console.log(`[Gemini] NPC 대화 완료: ${text}`);
-    })
-    .catch((error) => {
-      console.error("[Gemini] NPC 대화 오류:", error);
-      $gameVariables.setValue(resultVar, "...");
-    });
+    // Escape 키로 종료하는 리스너 추가
+    chatState.escapeListener = (e) => {
+        if (e.key === 'Escape') {
+            endChat();
+            e.preventDefault();
+        }
+    };
+    document.addEventListener('keydown', chatState.escapeListener, true); // true로 캡처링 단계에서 처리
   });
 
-  // 기본 Gemini 호출
+  PluginManager.registerCommand("Gemini_API_Plugin", "endChatWithNpc", (args) => {
+      endChat();
+  });
+
+
+  PluginManager.registerCommand("Gemini_API_Plugin", "speechToText", (args) => {
+    if (!recognition) {
+      $gameMessage.add("음성 인식이 지원되지 않는 환경입니다.");
+      return;
+    }
+    recognition.variableId = Number(args.variableId);
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("[Gemini] 음성 인식 시작 오류:", e);
+    }
+  });
+
   PluginManager.registerCommand("Gemini_API_Plugin", "callGemini", (args) => {
     const variableId = Number(args.variableId);
     const waitSwitchId = Number(args.waitSwitchId);
+    if (waitSwitchId > 0) $gameSwitches.setValue(waitSwitchId, true);
 
-    console.log("[Gemini] 호출 시작:", args.prompt);
-
-    // 로딩 중 표시
-    $gameVariables.setValue(variableId, "...");
-
-    // 대기 스위치 ON (응답 받을 때까지 이벤트 진행 막기)
-    if (waitSwitchId > 0) {
-      $gameSwitches.setValue(waitSwitchId, true);
-      console.log("[Gemini] 대기 스위치 ON:", waitSwitchId);
-    }
-
-    // API 호출
     const MODEL_NAME = "gemini-2.5-flash";
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-
-    console.log("[Gemini] API 요청 URL:", API_URL);
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent?key=${GeminiConfig.API_KEY}`;
 
     fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: args.prompt }] }]
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: args.prompt }] }] })
     })
-    .then((response) => {
-      console.log("[Gemini] 응답 상태:", response.status);
-      if (!response.ok) {
-        return response.text().then(text => {
-          throw new Error(`HTTP ${response.status}: ${text}`);
-        });
-      }
-      return response.json();
-    })
-    .then((data) => {
-      console.log("[Gemini] 응답 데이터:", data);
+    .then(response => response.ok ? response.json() : Promise.reject(response.text()))
+    .then(data => {
       const text = data.candidates[0].content.parts[0].text;
       $gameVariables.setValue(variableId, text);
-
-      // 대기 스위치가 없을 때만 메시지 자동 표시
-      if (waitSwitchId === 0) {
-        $gameMessage.add(text);
-      }
-
-      console.log("[Gemini] 성공! 텍스트:", text.substring(0, 50) + "...");
     })
-    .catch((error) => {
-      console.error("[Gemini] 오류:", error);
-      const errorMsg = "오류: " + error.message;
-      $gameVariables.setValue(variableId, errorMsg);
-
-      if (waitSwitchId === 0) {
-        $gameMessage.add(errorMsg);
-      }
+    .catch(error => {
+      console.error("[Gemini] API 호출 오류:", error);
+      $gameVariables.setValue(variableId, "API 호출 중 오류 발생");
     })
     .finally(() => {
-      // 완료되면 대기 스위치 OFF
-      if (waitSwitchId > 0) {
-        $gameSwitches.setValue(waitSwitchId, false);
-        console.log("[Gemini] 대기 스위치 OFF");
-      }
-      console.log("[Gemini] 완료");
+      if (waitSwitchId > 0) $gameSwitches.setValue(waitSwitchId, false);
     });
   });
+
 })();

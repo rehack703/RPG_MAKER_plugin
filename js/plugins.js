@@ -3,7 +3,7 @@
 var $plugins =
 [
 {"name":"AltMenuScreen","status":true,"description":"Alternative menu screen layout.","parameters":{}},
-{"name":"Gemini_API_Plugin","status":false,"description":"[Gemini API] Gemini API를 호출하여 텍스트를 생성하고 NPC 자동 대화를 지원합니다.","parameters":{}},
+{"name":"Gemini_API_Plugin","status":true,"description":"[Gemini API] Gemini API를 호출하여 텍스트를 생성하고 NPC 자동 대화 및 1:1 채팅을 지원합니다.","parameters":{}},
 {"name":"TimeSystem","status":true,"description":"게임 내 시간 시스템 - 시계 표시, 상호작용 시간 경과, 낮/밤 전환","parameters":{"initialHour":"7","initialMinute":"0","clockX":"10","clockY":"10","clockWidth":"180","clockHeight":"60","talkTime":"60","doorTime":"10","searchTime":"5","switchTime":"40","enableDayNight":"true","transitionSpeed":"60","autoTimeFlow":"true","timeFlowSpeed":"2","innSwitchId":"10"}},
 {"name":"SpeechToText","status":true,"description":"Groq Whisper API를 사용하여 음성을 텍스트로 변환합니다.","parameters":{"variableId":"1","language":"ko","showWindow":"true","toggleKey":"V"}}
 ];
