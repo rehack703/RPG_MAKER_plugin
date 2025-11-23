@@ -4,9 +4,9 @@
 
 /*:
  * @target MZ
- * @plugindesc 게임 내 시간 시스템 - 시계 표시, 상호작용 시간 경과, 낮/밤 전환
+ * @plugindesc 게임 내 시간 시스템 - 계절, 시계(Digital/Analog/Drawn), 시간 경과, 낮/밤 전환
  * @author YourName
- * @version 1.1.0
+ * @version 1.3.0
  *
  * @param initialHour
  * @text 시작 시각 (시)
@@ -24,6 +24,29 @@
  * @max 59
  * @default 0
  *
+ * @param --- Seasons ---
+ *
+ * @param daysPerSeason
+ * @text 계절당 일수
+ * @desc 한 계절이 지속되는 일수입니다.
+ * @type number
+ * @min 1
+ * @default 10
+ *
+ * @param --- Clock Style ---
+ *
+ * @param clockType
+ * @text 시계 타입
+ * @desc 표시할 시계의 타입을 선택합니다.
+ * @type select
+ * @option Digital
+ * @value digital
+ * @option Analog (Image-based)
+ * @value analog
+ * @option Drawn Analog (No Images)
+ * @value drawn
+ * @default digital
+ *
  * @param clockX
  * @text 시계 X 위치
  * @desc 화면 왼쪽 기준 오프셋
@@ -36,15 +59,76 @@
  * @type number
  * @default 10
  *
+ * @param --- Digital Clock ---
+ *
  * @param clockWidth
- * @text 시계 너비
+ * @text [Digital] 시계 너비
  * @type number
- * @default 200
+ * @default 240
  *
  * @param clockHeight
- * @text 시계 높이
+ * @text [Digital] 시계 높이
  * @type number
  * @default 50
+ *
+ * @param --- Analog Clock (Image) ---
+ *
+ * @param analogClockBg
+ * @text [Analog] 시계 배경 이미지
+ * @desc 아날로그 시계의 배경 이미지 파일
+ * @type file
+ * @dir img/pictures/
+ * @default analog_clock_bg
+ *
+ * @param hourHandImage
+ * @text [Analog] 시침 이미지
+ * @desc 아날로그 시계의 시침 이미지 파일
+ * @type file
+ * @dir img/pictures/
+ * @default analog_clock_hour_hand
+ *
+ * @param minuteHandImage
+ * @text [Analog] 분침 이미지
+ * @desc 아날로그 시계의 분침 이미지 파일
+ * @type file
+ * @dir img/pictures/
+ * @default analog_clock_minute_hand
+ *
+ * @param --- Drawn Analog Clock ---
+ *
+ * @param drawnClockRadius
+ * @text [Drawn] 시계 반지름
+ * @desc 그려지는 아날로그 시계의 반지름 (크기)
+ * @type number
+ * @min 10
+ * @default 40
+ *
+ * @param drawnClockFaceColor
+ * @text [Drawn] 시계 배경색
+ * @desc 시계 배경 색상 (CSS format, e.g., rgba(0,0,0,0.5))
+ * @default rgba(0, 0, 0, 0.5)
+ *
+ * @param drawnClockFrameColor
+ * @text [Drawn] 시계 테두리색
+ * @desc 시계 테두리 색상
+ * @default white
+ *
+ * @param drawnClockTickColor
+ * @text [Drawn] 시계 눈금색
+ * @desc 시계 눈금 색상
+ * @default white
+ *
+ * @param drawnClockHourHandColor
+ * @text [Drawn] 시침 색상
+ * @desc 시침 색상
+ * @default white
+ *
+ * @param drawnClockMinuteHandColor
+ * @text [Drawn] 분침 색상
+ * @desc 분침 색상
+ * @default white
+ *
+ * @param --- Time Passage ---
  *
  * @param talkTime
  * @text [기본] 대화 소요 시간 (분)
@@ -82,18 +166,6 @@
  * @type number
  * @default 10
  *
- * @param enableDayNight
- * @text 낮/밤 효과 활성화
- * @desc 시간에 따라 화면 색조 변경
- * @type boolean
- * @default true
- *
- * @param transitionSpeed
- * @text 색조 전환 속도
- * @desc 낮/밤 전환 속도 (프레임)
- * @type number
- * @default 60
- *
  * @param autoTimeFlow
  * @text 자동 시간 경과
  * @desc 아무것도 안 해도 시간이 자동으로 흐릅니다
@@ -107,6 +179,20 @@
  * @min 1
  * @max 60
  * @default 2
+ *
+ * @param --- Effects ---
+ *
+ * @param enableDayNight
+ * @text 낮/밤 효과 활성화
+ * @desc 시간에 따라 화면 색조 변경
+ * @type boolean
+ * @default true
+ *
+ * @param transitionSpeed
+ * @text 색조 전환 속도
+ * @desc 낮/밤 전환 속도 (프레임)
+ * @type number
+ * @default 60
  *
  * @command addTime
  * @text 시간 추가
@@ -162,60 +248,58 @@
  * @type boolean
  * @default false
  *
- * @help TimeSystem.js (v1.1.0)
+ * @command getSeason
+ * @text 현재 계절 가져오기
+ * @desc 현재 계절 이름을 지정된 변수에 저장합니다.
+ *
+ * @arg variableId
+ * @text 변수 ID
+ * @desc 계절 이름을 저장할 게임 변수의 ID
+ * @type variable
+ * @default 1
+ *
+ * @help TimeSystem.js (v1.3.0)
  *
  * =============================================================================
- * 게임 내 시간 시스템
+ * 게임 내 시간 및 계절 시스템
  * ============================================================================
  *
- * 이 플러그인은 게임 내에서 시간이 흐르는 시스템을 제공합니다.
+ * 이 플러그인은 게임 내에서 시간이 흐르고 계절이 변화하는 시스템을 제공합니다.
  *
- * == 시간 경과 노트 태그 사용법 ==
+ * == 주요 기능 ==
+ * - 일, 시, 분 단위의 시간 흐름 및 계절 변화 (봄, 여름, 가을, 겨울)
+ * - 자동 시간 경과 및 플레이어 행동에 따른 시간 소모
+ * - 시간과 계절에 따른 화면 색조(틴트) 변화
+ * - 3가지 타입의 시계 표시 (디지털, 이미지 기반 아날로그, 코드 기반 아날로그)
  *
- * 이벤트의 노트(Note) 란에 아래 태그를 추가하여,
- * 해당 이벤트를 실행할 때 자동으로 시간이 흐르게 할 수 있습니다.
+ * == 시계 타입 상세 ==
  *
- * 태그를 추가하지 않으면 플러그인 설정의 기본값이 적용됩니다.
- * 시간을 흐르지 않게 하려면 0을 입력하세요. (예: <timeTalk:0>)
+ * 1. Digital: [Day 1 (Spring) 07:00] 형식의 텍스트로 시간을 표시합니다.
  *
- *   <timeTalk> 또는 <timeTalk:20>
- *   - 설명: 대화 시 시간 경과 (기본값 또는 20분)
- *   - 적용 시점: '문장 표시(Show Text)' 커맨드 실행 시
+ * 2. Analog (Image-based): 이미지 파일을 사용해 아날로그 시계를 표시합니다.
+ *    'img/pictures/' 폴더 안에 시계 배경, 시침, 분침 이미지가 필요합니다.
  *
- *   <timeSearch> 또는 <timeSearch:10>
- *   - 설명: 조사 시 시간 경과 (기본값 또는 10분)
- *   - 적용 시점: '문장 표시(Show Text)' 커맨드 실행 시
+ * 3. Drawn Analog (No Images): 이미지 파일 없이 코드로 직접 그린 아날로그
+ *    시계를 표시합니다. 플러그인 설정에서 시계의 크기와 모든 부위의 색상을
+ *    자유롭게 커스터마이징할 수 있습니다.
  *
- *   <timeRead> 또는 <timeRead:15>
- *   - 설명: 책/간판 읽을 시 시간 경과 (기본값 또는 15분)
- *   - 적용 시점: '문장 표시(Show Text)' 커맨드 실행 시
+ * == 계절 시스템 ==
  *
- *   <timeDoor> 또는 <timeDoor:5>
- *   - 설명: 문 사용 시 시간 경과 (기본값 또는 5분)
- *   - 적용 시점: '장소 이동(Transfer Player)' 커맨드 실행 시
+ * 'daysPerSeason' 파라미터에 설정된 일수마다 계절이 바뀝니다.
+ * 플러그인 커맨드 'getSeason'을 사용하면 현재 계절의 이름("Spring", "Summer",
+ * "Autumn", "Winter")을 지정한 게임 변수에 저장할 수 있습니다.
  *
- *   <timeSwitch> 또는 <timeSwitch:3>
- *   - 설명: 스위치 조작 시 시간 경과 (기본값 또는 3분)
- *   - 적용 시점: '스위치 조작(Control Switches)' 커맨드 실행 시
+ * == 시간 경과 노트 태그 ==
  *
- *   <timeChest> 또는 <timeChest:5>
- *   - 설명: 보물상자 열 때 시간 경과 (기본값 또는 5분)
- *   - 적용 시점: '아이템 증감(Change Items)' 커맨드 실행 시
+ * 이벤트 노트란에 태그를 추가하여 이벤트 실행 시 시간이 흐르게 할 수 있습니다.
+ * 예: <timeTalk:10> (대화 시 10분 경과)
  *
- * == 여관 기능 사용법 ==
- *
- * 1. 여관 주인 NPC 이벤트를 만듭니다.
- * 2. 대화 선택지에서 "숙박한다"를 선택했을 때,
- *    플러그인 커맨드 'stayAtInn'을 실행하도록 설정합니다.
- *
- * == 시간대별 색조 (v1.1.0) ==
- *
- * 새벽 (4-6시)
- * 아침 (6-9시)
- * 정오 (12-14시)
- * 오후 (14-17시)
- * 저녁 (17-19시)
- * 밤 (19-4시)
+ *   - <timeTalk:분>
+ *   - <timeSearch:분>
+ *   - <timeRead:분>
+ *   - <timeDoor:분>
+ *   - <timeSwitch:분>
+ *   - <timeChest:분>
  *
  */
 
@@ -228,24 +312,87 @@
     // 파라미터 읽기
     const INITIAL_HOUR = Number(parameters['initialHour'] || 7);
     const INITIAL_MINUTE = Number(parameters['initialMinute'] || 0);
+
+    const DAYS_PER_SEASON = Number(parameters['daysPerSeason'] || 10);
+
+    const CLOCK_TYPE = parameters['clockType'] || 'digital';
     const CLOCK_X = Number(parameters['clockX'] || 10);
     const CLOCK_Y = Number(parameters['clockY'] || 10);
-    const CLOCK_WIDTH = Number(parameters['clockWidth'] || 200);
+    // Digital
+    const CLOCK_WIDTH = Number(parameters['clockWidth'] || 240);
     const CLOCK_HEIGHT = Number(parameters['clockHeight'] || 50);
+    // Analog (Image)
+    const ANALOG_CLOCK_BG = parameters['analogClockBg'] || 'analog_clock_bg';
+    const HOUR_HAND_IMAGE = parameters['hourHandImage'] || 'analog_clock_hour_hand';
+    const MINUTE_HAND_IMAGE = parameters['minuteHandImage'] || 'analog_clock_minute_hand';
+    // Drawn Analog
+    const DRAWN_CLOCK_RADIUS = Number(parameters['drawnClockRadius'] || 40);
+    const DRAWN_CLOCK_FACE_COLOR = parameters['drawnClockFaceColor'] || 'rgba(0, 0, 0, 0.5)';
+    const DRAWN_CLOCK_FRAME_COLOR = parameters['drawnClockFrameColor'] || 'white';
+    const DRAWN_CLOCK_TICK_COLOR = parameters['drawnClockTickColor'] || 'white';
+    const DRAWN_CLOCK_HOUR_HAND_COLOR = parameters['drawnClockHourHandColor'] || 'white';
+    const DRAWN_CLOCK_MINUTE_HAND_COLOR = parameters['drawnClockMinuteHandColor'] || 'white';
+
     const TALK_TIME = Number(parameters['talkTime'] || 10);
     const DOOR_TIME = Number(parameters['doorTime'] || 1);
     const SEARCH_TIME = Number(parameters['searchTime'] || 5);
     const SWITCH_TIME = Number(parameters['switchTime'] || 2);
     const CHEST_TIME = Number(parameters['chestTime'] || 3);
     const READ_TIME = Number(parameters['readTime'] || 10);
+
     const ENABLE_DAY_NIGHT = parameters['enableDayNight'] === 'true';
     const TRANSITION_SPEED = Number(parameters['transitionSpeed'] || 60);
     const AUTO_TIME_FLOW = parameters['autoTimeFlow'] !== 'false';
     const TIME_FLOW_SPEED = Number(parameters['timeFlowSpeed'] || 2);
 
+    const SEASON_NAMES = ['Spring', 'Summer', 'Autumn', 'Winter'];
+    const SEASONAL_TONES = {
+        // Spring (0)
+        0: {
+            dawn: [-17, -17, 17, 34],      // 약간 분홍빛 새벽
+            morning: [0, 0, 0, 0],         // 상쾌한 아침
+            day: [0, 0, 0, 0],
+            noon: [10, 10, 0, 0],        // 따스한 정오
+            afternoon: [0, 0, 0, 0],
+            evening: [34, -10, -10, 0],    // 주황빛 저녁
+            night: [-68, -68, 0, 68]
+        },
+        // Summer (1)
+        1: {
+            dawn: [-10, -10, 0, 20],      // 밝은 새벽
+            morning: [17, 17, 0, 0],       // 쨍한 아침
+            day: [10, 10, 0, 0],
+            noon: [25, 25, 10, 0],       // 뜨거운 정오
+            afternoon: [10, 10, 0, 0],
+            evening: [50, -10, -30, 0],    // 붉은 저녁
+            night: [-60, -60, -10, 68]
+        },
+        // Autumn (2)
+        2: {
+            dawn: [-34, -25, 34, 50],      // 서늘한 새벽
+            morning: [17, 0, -17, 0],
+            day: [17, 0, -17, 0],
+            noon: [25, 10, -10, 0],      // 부드러운 정오
+            afternoon: [17, 0, -17, 0],
+            evening: [68, -17, -34, 0],    // 운치있는 저녁
+            night: [-75, -75, 0, 68]
+        },
+        // Winter (3)
+        3: {
+            dawn: [-50, -50, 0, 68],      // 차가운 새벽
+            morning: [-17, -17, 0, 0],     // 창백한 아침
+            day: [-10, -10, 0, 0],
+            noon: [0, 0, 0, 0],
+            afternoon: [-10, -10, 0, 0],
+            evening: [0, -30, -30, 0],     // 푸른 저녁
+            night: [-85, -85, 0, 85]     // 깊은 밤
+        }
+    };
+
+
     //===========================================================================
     // Game_Time
-    // 시간 관리 클래스
+    // 시간 및 계절 관리 클래스
     //===========================================================================
 
     class Game_Time {
@@ -257,21 +404,28 @@
             this._hour = INITIAL_HOUR;
             this._minute = INITIAL_MINUTE;
             this._day = 1;
+            this._season = 0;
             this._clockVisible = true;
             this._autoTimeEnabled = AUTO_TIME_FLOW;
             this._timeCounter = 0; // 프레임 카운터
+            this.updateSeason(false);
         }
 
         addMinutes(minutes) {
             if (minutes <= 0) return;
             this._minute += minutes;
+            let dayChanged = false;
             while (this._minute >= 60) {
                 this._minute -= 60;
                 this._hour++;
+                while (this._hour >= 24) {
+                    this._hour -= 24;
+                    this._day++;
+                    dayChanged = true;
+                }
             }
-            while (this._hour >= 24) {
-                this._hour -= 24;
-                this._day++;
+            if (dayChanged) {
+                this.updateSeason(true);
             }
             this.updateDayNightTone();
         }
@@ -279,20 +433,28 @@
         setTime(hour, minute) {
             this._hour = hour % 24;
             this._minute = minute % 60;
+            this.updateSeason(false);
             this.updateDayNightTone();
         }
 
-        getHour() {
-            return this._hour;
+        updateSeason(dayChanged) {
+            const oldSeason = this._season;
+            this._season = Math.floor((this._day - 1) / DAYS_PER_SEASON) % 4;
+            if (dayChanged && oldSeason !== this._season) {
+                this.onSeasonChange();
+            }
         }
 
-        getMinute() {
-            return this._minute;
+        onSeasonChange() {
+            // 계절 변경 시 특별한 효과를 넣을 수 있는 훅(hook)
+            // 예: 날씨 패턴 변경 등
         }
 
-        getDay() {
-            return this._day;
-        }
+        getHour() { return this._hour; }
+        getMinute() { return this._minute; }
+        getDay() { return this._day; }
+        getSeason() { return this._season; }
+        getSeasonName() { return SEASON_NAMES[this._season]; }
 
         getTimeString() {
             const h = String(this._hour).padStart(2, '0');
@@ -315,26 +477,9 @@
             if (!ENABLE_DAY_NIGHT || !$gameMap) return;
 
             const timeOfDay = this.getTimeOfDay();
-            let tone;
+            const season = this.getSeason();
+            const tone = SEASONAL_TONES[season][timeOfDay] || [0, 0, 0, 0];
 
-            switch (timeOfDay) {
-                case 'dawn':
-                    tone = [-34, -17, 34, 68]; break;
-                case 'morning':
-                    tone = [17, 0, -17, 0]; break;
-                case 'day':
-                    tone = [0, 0, 0, 0]; break;
-                case 'noon':
-                    tone = [17, 17, 0, 0]; break; // 정오: 약간 밝고 노란 톤
-                case 'afternoon':
-                    tone = [0, 0, 0, 0]; break; // 오후: 기본 톤
-                case 'evening':
-                    tone = [68, -17, -34, 0]; break;
-                case 'night':
-                    tone = [-68, -68, 0, 68]; break;
-                default:
-                    tone = [0, 0, 0, 0]; break;
-            }
             $gameScreen.startTint(tone, TRANSITION_SPEED);
         }
 
@@ -346,7 +491,7 @@
         isAutoTimeEnabled() { return this._autoTimeEnabled; }
 
         update() {
-            if (!this.isAutoTimeEnabled()) return;
+            if (!this.isAutoTimeEnabled() || !SceneManager.isSceneStarted()) return;
             const framesPerMinute = 60 * TIME_FLOW_SPEED;
             this._timeCounter++;
             if (this._timeCounter >= framesPerMinute) {
@@ -379,15 +524,20 @@
     const _DataManager_extractSaveContents = DataManager.extractSaveContents;
     DataManager.extractSaveContents = function(contents) {
         _DataManager_extractSaveContents.call(this, contents);
-        $gameTime = contents.gameTime;
-        // 이전 버전과의 호환성을 위해
-        if (!$gameTime.updateDayNightTone) {
-            Object.assign($gameTime, Game_Time.prototype);
+        if (contents.gameTime) {
+            $gameTime = contents.gameTime;
+            // v1.2 호환성: _season 속성이 없으면 추가
+            if (typeof $gameTime._season === 'undefined') {
+                Object.assign($gameTime, Game_Time.prototype);
+                $gameTime.updateSeason(false);
+            }
+        } else {
+            $gameTime = new Game_Time();
         }
     };
 
     //===========================================================================
-    // Window_Clock
+    // Window_Clock (Digital)
     //===========================================================================
 
     class Window_Clock extends Window_Base {
@@ -396,6 +546,7 @@
             super.initialize(rect);
             this.opacity = 200;
             this._lastTime = '';
+            this._lastSeason = -1;
             this.refresh();
         }
 
@@ -404,8 +555,10 @@
             if (!$gameTime) return;
             this.visible = $gameTime.isClockVisible();
             const currentTime = $gameTime.getTimeString();
-            if (this._lastTime !== currentTime) {
+            const currentSeason = $gameTime.getSeason();
+            if (this._lastTime !== currentTime || this._lastSeason !== currentSeason) {
                 this._lastTime = currentTime;
+                this._lastSeason = currentSeason;
                 this.refresh();
             }
         }
@@ -415,12 +568,149 @@
             this.contents.clear();
             this.contents.fontSize = 22;
             const dayText = 'Day ' + $gameTime.getDay();
+            const seasonText = $gameTime.getSeasonName();
             const timeText = $gameTime.getTimeString();
-            const fullText = `${dayText}  ${timeText}`;
-            this.drawText(fullText, 8, 6, this.contents.width - 16, 'left');
+            const fullText = `${dayText} (${seasonText})  ${timeText}`;
+            this.drawText(fullText, 0, 0, this.contents.width, 'center');
             this.resetFontSettings();
         }
     }
+
+    //===========================================================================
+    // Sprite_AnalogClock (Image-based)
+    //===========================================================================
+
+    class Sprite_AnalogClock extends Sprite {
+        initialize() {
+            super.initialize();
+            this.x = CLOCK_X;
+            this.y = CLOCK_Y;
+            this.createSprites();
+            this.update();
+        }
+
+        createSprites() {
+            this._bgSprite = new Sprite(ImageManager.loadPicture(ANALOG_CLOCK_BG));
+            this.addChild(this._bgSprite);
+
+            this._hourHand = new Sprite(ImageManager.loadPicture(HOUR_HAND_IMAGE));
+            this._hourHand.anchor.x = 0.5;
+            this._hourHand.anchor.y = 1;
+            this.addChild(this._hourHand);
+
+            this._minuteHand = new Sprite(ImageManager.loadPicture(MINUTE_HAND_IMAGE));
+            this._minuteHand.anchor.x = 0.5;
+            this._minuteHand.anchor.y = 1;
+            this.addChild(this._minuteHand);
+        }
+
+        update() {
+            super.update();
+            if (!$gameTime) return;
+            this.visible = $gameTime.isClockVisible();
+            if (this.visible) {
+                this.updateHands();
+            }
+        }
+
+        updateHands() {
+            const hour = $gameTime.getHour();
+            const minute = $gameTime.getMinute();
+            const bgBitmap = this._bgSprite.bitmap;
+
+            if (bgBitmap && bgBitmap.isReady()) {
+                const centerX = bgBitmap.width / 2;
+                const centerY = bgBitmap.height / 2;
+                this._hourHand.x = centerX;
+                this._hourHand.y = centerY;
+                this._minuteHand.x = centerX;
+                this._minuteHand.y = centerY;
+            }
+
+            this._hourHand.rotation = (hour % 12 + minute / 60) / 12 * 2 * Math.PI;
+            this._minuteHand.rotation = (minute / 60) * 2 * Math.PI;
+        }
+    }
+
+    //===========================================================================
+    // Sprite_DrawnAnalogClock (No Images)
+    //===========================================================================
+    class Sprite_DrawnAnalogClock extends Sprite {
+        initialize() {
+            super.initialize();
+            this.x = CLOCK_X;
+            this.y = CLOCK_Y;
+            const size = DRAWN_CLOCK_RADIUS * 2 + 4;
+            this._faceBitmap = new Bitmap(size, size);
+            this._handsBitmap = new Bitmap(size, size);
+            this.addChild(new Sprite(this._faceBitmap));
+            this.addChild(new Sprite(this._handsBitmap));
+            this._lastMinute = -1;
+            this.drawClockFace();
+            this.update();
+        }
+
+        drawClockFace() {
+            const r = DRAWN_CLOCK_RADIUS;
+            const c = r + 2; // center
+            const ctx = this._faceBitmap.context;
+            ctx.clearRect(0, 0, c * 2, c * 2);
+            // Face
+            ctx.beginPath();
+            ctx.fillStyle = DRAWN_CLOCK_FACE_COLOR;
+            ctx.arc(c, c, r, 0, 2 * Math.PI);
+            ctx.fill();
+            // Frame
+            ctx.beginPath();
+            ctx.strokeStyle = DRAWN_CLOCK_FRAME_COLOR;
+            ctx.lineWidth = 2;
+            ctx.arc(c, c, r, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Ticks
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 6) * Math.PI;
+                const isMajor = i % 3 === 0;
+                const startR = r - (isMajor ? 8 : 4);
+                const endR = r;
+                ctx.beginPath();
+                ctx.strokeStyle = DRAWN_CLOCK_TICK_COLOR;
+                ctx.lineWidth = isMajor ? 3 : 1;
+                ctx.moveTo(c + Math.cos(angle) * startR, c + Math.sin(angle) * startR);
+                ctx.lineTo(c + Math.cos(angle) * endR, c + Math.sin(angle) * endR);
+                ctx.stroke();
+            }
+            this._faceBitmap.baseTexture.update();
+        }
+
+        update() {
+            super.update();
+            if (!$gameTime) return;
+            this.visible = $gameTime.isClockVisible();
+            if (this.visible && this._lastMinute !== $gameTime.getMinute()) {
+                this._lastMinute = $gameTime.getMinute();
+                this.updateHands();
+            }
+        }
+
+        updateHands() {
+            const r = DRAWN_CLOCK_RADIUS;
+            const c = r + 2; // center
+            const h = $gameTime.getHour();
+            const m = $gameTime.getMinute();
+            this._handsBitmap.clear();
+            // Hour Hand
+            const hAngle = (h % 12 + m / 60) / 6 * Math.PI - Math.PI / 2;
+            const hLength = r * 0.6;
+            this._handsBitmap.drawLine(c, c, c + Math.cos(hAngle) * hLength, c + Math.sin(hAngle) * hLength, DRAWN_CLOCK_HOUR_HAND_COLOR, 4);
+            // Minute Hand
+            const mAngle = (m / 30) * Math.PI - Math.PI / 2;
+            const mLength = r * 0.9;
+            this._handsBitmap.drawLine(c, c, c + Math.cos(mAngle) * mLength, c + Math.sin(mAngle) * mLength, DRAWN_CLOCK_MINUTE_HAND_COLOR, 2);
+             // Center dot
+            this._handsBitmap.drawCircle(c, c, 3, DRAWN_CLOCK_FRAME_COLOR);
+        }
+    }
+
 
     //===========================================================================
     // Scene_Map
@@ -429,12 +719,18 @@
     const _Scene_Map_createAllWindows = Scene_Map.prototype.createAllWindows;
     Scene_Map.prototype.createAllWindows = function() {
         _Scene_Map_createAllWindows.call(this);
-        this.createClockWindow();
+        this.createTimeDisplay();
     };
 
-    Scene_Map.prototype.createClockWindow = function() {
-        this._clockWindow = new Window_Clock();
-        this.addChild(this._clockWindow);
+    Scene_Map.prototype.createTimeDisplay = function() {
+        if (CLOCK_TYPE === 'analog') {
+            this._timeDisplay = new Sprite_AnalogClock();
+        } else if (CLOCK_TYPE === 'drawn') {
+            this._timeDisplay = new Sprite_DrawnAnalogClock();
+        } else {
+            this._timeDisplay = new Window_Clock();
+        }
+        this.addChild(this._timeDisplay);
     };
 
     const _Scene_Map_start = Scene_Map.prototype.start;
@@ -443,76 +739,82 @@
         if ($gameTime) $gameTime.updateDayNightTone();
     };
 
+    /*
     const _Scene_Map_update = Scene_Map.prototype.update;
     Scene_Map.prototype.update = function() {
         _Scene_Map_update.call(this);
         if ($gameTime) $gameTime.update();
     };
+    */
 
     //===========================================================================
     // Game_Interpreter
     //===========================================================================
 
-    const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
-    Game_Interpreter.prototype.pluginCommand = function(command, args) {
-        _Game_Interpreter_pluginCommand.call(this, command, args);
-        if (command === pluginName) {
-            this.processTimeSystemCommands(args[0], args.slice(1));
-        }
-    };
-
-    // 노트 태그로 시간 경과를 처리하는 헬퍼 함수
-    function applyTimeCostFromNoteTag(interpreter) {
-        const event = $gameMap.event(interpreter.eventId());
-        if (!event || !event.event().note) return;
-
-        const note = event.event().note;
-        const tags = {
-            timeTalk: TALK_TIME,
-            timeSearch: SEARCH_TIME,
-            timeRead: READ_TIME,
-            timeDoor: DOOR_TIME,
-            timeSwitch: SWITCH_TIME,
-            timeChest: CHEST_TIME
-        };
-
-        for (const tag in tags) {
-            const regex = new RegExp(`<${tag}(?::(\d+))?>`, 'i');
-            const match = note.match(regex);
-            if (match) {
-                const minutes = match[1] ? Number(match[1]) : tags[tag];
-                $gameTime.addMinutes(minutes);
-                return; // 첫 번째로 일치하는 태그만 적용
+    const _GInt_command101 = Game_Interpreter.prototype.command101;
+    Game_Interpreter.prototype.command101 = function(params) {
+        if ($gameTime) {
+            const event = $gameMap.event(this.eventId());
+            if (event && event.event().note) {
+                const note = event.event().note;
+                let minutes = 0;
+                let match;
+                if ((match = note.match(/<timeRead(?::(\d+))?>/i))) {
+                    minutes = match[1] ? Number(match[1]) : READ_TIME;
+                } else if ((match = note.match(/<timeSearch(?::(\d+))?>/i))) {
+                    minutes = match[1] ? Number(match[1]) : SEARCH_TIME;
+                } else if ((match = note.match(/<timeTalk(?::(\d+))?>/i))) {
+                    minutes = match[1] ? Number(match[1]) : TALK_TIME;
+                }
+                if(minutes > 0) $gameTime.addMinutes(minutes);
             }
         }
-    }
-
-    // 문장 표시 (대화, 조사, 읽기)
-    const _Game_Interpreter_command101 = Game_Interpreter.prototype.command101;
-    Game_Interpreter.prototype.command101 = function(params) {
-        if ($gameTime) applyTimeCostFromNoteTag(this);
-        return _Game_Interpreter_command101.call(this, params);
+        return _GInt_command101.call(this, params);
     };
 
-    // 스위치 조작
-    const _Game_Interpreter_command121 = Game_Interpreter.prototype.command121;
+    const _GInt_command121 = Game_Interpreter.prototype.command121;
     Game_Interpreter.prototype.command121 = function(params) {
-        if ($gameTime) applyTimeCostFromNoteTag(this);
-        return _Game_Interpreter_command121.call(this, params);
+        if ($gameTime) {
+             const event = $gameMap.event(this.eventId());
+            if (event && event.event().note) {
+                const match = event.event().note.match(/<timeSwitch(?::(\d+))?>/i);
+                if (match) {
+                    const minutes = match[1] ? Number(match[1]) : SWITCH_TIME;
+                    if(minutes > 0) $gameTime.addMinutes(minutes);
+                }
+            }
+        }
+        return _GInt_command121.call(this, params);
     };
 
-    // 아이템 증감 (보물상자)
-    const _Game_Interpreter_command126 = Game_Interpreter.prototype.command126;
+    const _GInt_command126 = Game_Interpreter.prototype.command126;
     Game_Interpreter.prototype.command126 = function(params) {
-        if ($gameTime) applyTimeCostFromNoteTag(this);
-        return _Game_Interpreter_command126.call(this, params);
+        if ($gameTime) {
+             const event = $gameMap.event(this.eventId());
+            if (event && event.event().note) {
+                const match = event.event().note.match(/<timeChest(?::(\d+))?>/i);
+                if (match && params[1] === 0 && params[2] > 0) { // 아이템 증가 시
+                    const minutes = match[1] ? Number(match[1]) : CHEST_TIME;
+                    if(minutes > 0) $gameTime.addMinutes(minutes);
+                }
+            }
+        }
+        return _GInt_command126.call(this, params);
     };
 
-    // 장소 이동 (문)
-    const _Game_Interpreter_command201 = Game_Interpreter.prototype.command201;
+    const _GInt_command201 = Game_Interpreter.prototype.command201;
     Game_Interpreter.prototype.command201 = function(params) {
-        if ($gameTime) applyTimeCostFromNoteTag(this);
-        return _Game_Interpreter_command201.call(this, params);
+        if ($gameTime) {
+            const event = $gameMap.event(this.eventId());
+            if (event && event.event().note) {
+                const match = event.event().note.match(/<timeDoor(?::(\d+))?>/i);
+                if (match) {
+                    const minutes = match[1] ? Number(match[1]) : DOOR_TIME;
+                    if(minutes > 0) $gameTime.addMinutes(minutes);
+                }
+            }
+        }
+        return _GInt_command201.call(this, params);
     };
 
     //===========================================================================
@@ -534,6 +836,16 @@
     PluginManager.registerCommand(pluginName, 'enableAutoTime', () => $gameTime?.enableAutoTime());
     PluginManager.registerCommand(pluginName, 'disableAutoTime', () => $gameTime?.disableAutoTime());
 
+    PluginManager.registerCommand(pluginName, 'getSeason', args => {
+        if (!$gameTime) return;
+        const varId = Number(args.variableId);
+        if (varId > 0) {
+            $gameVariables.setValue(varId, $gameTime.getSeasonName());
+        }
+    });
+
+
+
     PluginManager.registerCommand(pluginName, 'stayAtInn', function(args) {
         if (!$gameTime) return;
         const skipFade = args.skipFade === 'true';
@@ -547,6 +859,7 @@
         const currentHour = $gameTime.getHour();
         if (currentHour >= 7) {
             $gameTime._day++;
+            $gameTime.updateSeason(true);
         }
         $gameTime.setTime(7, 0);
 
